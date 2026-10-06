@@ -8,9 +8,11 @@ const META_PADRAO_ML = 2000;
 const META_MIN_ML = 500;
 const META_MAX_ML = 10000;
 const MAX_REAPLICACOES = 3;
+const INTERVALO_ATIVO_MS = 5 * 60 * 1000; // tela visível e com foco
+const INTERVALO_INATIVO_MS = 15 * 60 * 1000; // tela oculta ou sem foco
 
-// O dia é fixado no carregamento: para virar o dia, recarrega a página.
-const HOJE = ui.chaveDia(new Date());
+// Recalculado a cada releitura e a cada toque, para a tela aberta virar o dia sozinha.
+let hoje = ui.chaveDia(new Date());
 
 let confirmado = null; // último estado que o GitHub confirmou
 let sha = null;
@@ -19,6 +21,9 @@ let pendente = null; // delta acumulado esperando a vez
 let falha = null; // delta que não gravou, aguardando "tentar de novo"
 let gravando = false;
 let rascunhoMeta = null; // valor na tela de meta; nulo quando ela está fechada
+let atualizando = false; // releitura periódica em andamento
+let ultimaTentativa = Date.now(); // última leitura do remoto, com sucesso ou não
+let temporizador = null;
 
 // Um delta é { ml, meta }: ml soma ao dia de hoje, meta (se não nula) troca a meta.
 function somarDeltas(a, b) {
@@ -35,10 +40,10 @@ function aplicar(dados, delta) {
   if (deltaVazio(delta)) return dados;
   const novo = { ...dados, dias: { ...dados.dias } };
   if (delta.meta != null) novo.meta_ml = delta.meta;
-  const dia = { ml: 0, meta_ml: novo.meta_ml, ...novo.dias[HOJE] };
+  const dia = { ml: 0, meta_ml: novo.meta_ml, ...novo.dias[hoje] };
   if (delta.meta != null) dia.meta_ml = delta.meta;
   dia.ml = Math.max(0, dia.ml + delta.ml);
-  novo.dias[HOJE] = dia;
+  novo.dias[hoje] = dia;
   return novo;
 }
 
@@ -60,7 +65,7 @@ function mensagemDeCommit(delta) {
   const partes = [];
   if (delta.meta != null) partes.push(`meta ${delta.meta} ml`);
   if (delta.ml !== 0) partes.push(`${delta.ml > 0 ? '+' : ''}${delta.ml} ml`);
-  return `agua: ${partes.join(', ')} (${HOJE})`;
+  return `agua: ${partes.join(', ')} (${hoje})`;
 }
 
 function descrever(delta) {
@@ -83,11 +88,21 @@ function render() {
     ui.mostrarTela('meta');
     return;
   }
-  ui.renderPrincipal(dados, HOJE, { gravando });
+  ui.renderPrincipal(dados, hoje, { gravando });
   ui.mostrarTela('principal');
 }
 
+// Só vira o dia com a fila vazia: um delta em andamento pertence ao dia em que foi tocado.
+function virarDia() {
+  if (gravando || pendente || falha) return false;
+  const agora = ui.chaveDia(new Date());
+  if (agora === hoje) return false;
+  hoje = agora;
+  return true;
+}
+
 function enfileirar(delta) {
+  virarDia();
   pendente = somarDeltas(pendente, delta);
   render();
   bombear();
@@ -158,12 +173,65 @@ function avisarFalha(delta, erro) {
   });
 }
 
+function podeAtualizar() {
+  return Boolean(confirmado && github.lerToken()) && !gravando && !pendente && !falha;
+}
+
+// Releitura silenciosa: cede a vez a qualquer gravação e só redesenha se algo mudou.
+async function atualizar() {
+  ultimaTentativa = Date.now();
+  if (atualizando || !podeAtualizar()) return;
+  atualizando = true;
+  const shaAntes = sha;
+  try {
+    if (virarDia()) render();
+    const remoto = await github.ler();
+    // Um toque ou logout durante a leitura deixa o que veio velho: descarta.
+    if (!podeAtualizar() || sha !== shaAntes) return;
+    if (remoto.sha !== sha) {
+      confirmado = normalizar(remoto.dados);
+      sha = remoto.sha;
+      render();
+    }
+  } catch (erro) {
+    // Rede e servidor ficam em silêncio: o próximo ciclo tenta de novo.
+    if (erro.tipo === 'token' && github.lerToken()) {
+      github.apagarToken();
+      ui.abrirLogin(erro.message);
+    }
+  } finally {
+    atualizando = false;
+  }
+}
+
+function telaAtiva() {
+  return !document.hidden && document.hasFocus();
+}
+
+function agendar() {
+  clearTimeout(temporizador);
+  const intervalo = telaAtiva() ? INTERVALO_ATIVO_MS : INTERVALO_INATIVO_MS;
+  const espera = Math.max(0, ultimaTentativa + intervalo - Date.now());
+  temporizador = setTimeout(async () => {
+    await atualizar();
+    agendar();
+  }, espera);
+}
+
+// Voltar para a tela sempre relê na hora: é quando se quer ver o que outro aparelho gravou,
+// e aba em segundo plano tem o timer congelado pelo navegador.
+function aoMudarAtividade() {
+  if (telaAtiva()) atualizar();
+  agendar();
+}
+
 async function carregar() {
   ui.mostrarTela('carregando');
   try {
     const remoto = await github.ler();
     confirmado = normalizar(remoto.dados);
     sha = remoto.sha;
+    ultimaTentativa = Date.now();
     render();
   } catch (erro) {
     if (erro.tipo === 'token') {
@@ -187,6 +255,7 @@ async function entrar(token) {
     const remoto = await github.ler();
     confirmado = normalizar(remoto.dados);
     sha = remoto.sha;
+    ultimaTentativa = Date.now();
     ui.fecharLogin();
     render();
   } catch (erro) {
@@ -216,7 +285,7 @@ function ajustarRascunho(ml) {
 ui.ligarEventos({
   somar: () => enfileirar({ ml: PASSO_ML, meta: null }),
   desfazer: () => {
-    if ((visao().dias[HOJE]?.ml ?? 0) > 0) enfileirar({ ml: -PASSO_ML, meta: null });
+    if ((visao().dias[hoje]?.ml ?? 0) > 0) enfileirar({ ml: -PASSO_ML, meta: null });
   },
   abrirMeta: () => {
     rascunhoMeta = visao().meta_ml ?? META_PADRAO_ML;
@@ -243,6 +312,11 @@ ui.ligarEventos({
   recarregar: carregar,
   trocarToken: () => ui.abrirLogin(),
 });
+
+document.addEventListener('visibilitychange', aoMudarAtividade);
+window.addEventListener('focus', aoMudarAtividade);
+window.addEventListener('blur', aoMudarAtividade);
+agendar();
 
 if (github.lerToken()) carregar();
 else {
