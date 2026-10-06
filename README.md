@@ -32,9 +32,11 @@ commit nessa branch; a `main` nunca recebe dado.
 
 Cada dia guarda a meta que valia naquele dia, então mudar a meta não altera o passado.
 
-O app lê os dados só quando a página carrega. Para ver o que foi registrado em outro
-aparelho, ou para virar o dia, basta atualizar a tela. Se dois aparelhos gravarem ao mesmo
-tempo, o app relê o arquivo e soma de novo, sem perder toque.
+O app lê os dados quando a página carrega e depois relê sozinho: a cada 5 minutos com a
+tela visível e em foco, e a cada 15 minutos com a tela oculta ou sem foco. Ao voltar para a
+tela, ele sempre relê na hora. É assim que aparece o que foi registrado em outro aparelho, e
+o dia também vira sozinho, sem atualizar a tela. Se dois aparelhos gravarem ao mesmo tempo,
+o app relê o arquivo e soma de novo, e nenhum toque se perde.
 
 ## Login
 
