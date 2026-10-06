@@ -13,7 +13,7 @@ branch, lido e gravado pela API de Contents do GitHub, login com token pessoal.
 Decisões já tomadas:
 - Nome: **Beba Água**, repo `SamuelAraag/beba-agua`.
 - Código num repo **privado**. Fica privado por enquanto.
-- Dados no repo privado de saúde (`SamuelAraag/emagrecimento`), branch órfã `agua-dados`.
+- Dados neste mesmo repo (`SamuelAraag/beba-agua`), branch órfã `agua-dados`.
 
 ## O que a análise do ToDo-List mostrou
 
@@ -62,7 +62,7 @@ for privado no plano Free, o app roda local (`python3 -m http.server`). Quando v
 público, ou se a conta for Pro, ativa Pages no modo "deploy from branch" (`main`, raiz),
 sem workflow e sem mudar código.
 
-### Dados: `agua.json` na branch `agua-dados` de `SamuelAraag/emagrecimento`
+### Dados: `agua.json` na branch `agua-dados` de `SamuelAraag/beba-agua`
 
 ```json
 {
@@ -87,7 +87,7 @@ sem workflow e sem mudar código.
   inválido), 404 (arquivo/branch ausente) e erro de rede, cada um com mensagem própria.
 - `gravar(dados, sha, mensagem)`: PUT com `sha` e `branch`. Devolve o `sha` novo ou lança
   erro tipado (`conflito` no 409).
-- Token: fine-grained PAT restrito ao repo `emagrecimento`, permissão Contents
+- Token: fine-grained PAT restrito ao repo `beba-agua`, permissão Contents
   read/write. Guardado em `localStorage`, campo `type="password"`. O modal explica como
   gerar esse token, não o classic.
 
@@ -135,7 +135,7 @@ recusado. Depois de gravar, a tela mostra o total já somado com o remoto.
 
 ## Passos de execução
 
-1. Criar a branch órfã `agua-dados` no `emagrecimento` com `agua.json` inicial
+1. Criar a branch órfã `agua-dados` no `beba-agua` com `agua.json` inicial
    (`{"versao":1,"meta_ml":null,"dias":{}}`), num clone temporário. O PUT da API não cria branch, por isso
    ela precisa existir antes.
 2. Criar o repo privado `beba-agua` e clonar em `~/Documents/beba-agua`. (feito)
@@ -160,11 +160,11 @@ Servir local com `python3 -m http.server` e abrir no navegador:
 - Conflito: duas abas abertas, tocar numa e depois na outra sem recarregar; o total final
   tem que somar os dois toques. A primeira aba só mostra o novo total depois do F5.
 - 5 toques rápidos: gera poucos commits e o total bate.
-- Conferir que nenhum commit novo caiu na `main` de `emagrecimento` nem de `beba-agua`.
+- Conferir que nenhum commit novo caiu na `main` de `beba-agua`.
 - Se o Pages ativar, repetir o caminho principal na URL dele pelo celular.
 
 ## Risco conhecido
 
 Fine-grained PAT não restringe por branch: o token do app pode escrever em qualquer
-arquivo do repo `emagrecimento`. Aceitável por ser de uso pessoal; se incomodar, a saída é
+arquivo do repo `beba-agua`, inclusive o código. Aceitável por ser de uso pessoal; se incomodar, a saída é
 mover os dados para um repo privado dedicado (troca de duas constantes em `github.js`).
