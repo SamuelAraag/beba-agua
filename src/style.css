@@ -107,7 +107,21 @@ h2:focus {
   min-height: 56px;
 }
 
+.logo {
+  display: block;
+  width: var(--e5);
+  height: var(--e5);
+}
+
+.logo--grande {
+  width: var(--e7);
+  height: var(--e7);
+}
+
 .topo__titulo {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
   font-size: var(--fonte-base);
   font-weight: 600;
   color: var(--texto-suave);

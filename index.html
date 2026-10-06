@@ -6,11 +6,12 @@
   <meta name="theme-color" content="#0b1220">
   <meta name="robots" content="noindex">
   <title>Beba Água</title>
+  <link rel="icon" type="image/svg+xml" href="src/logo.svg">
   <link rel="stylesheet" href="src/style.css">
 </head>
 <body>
   <header class="topo">
-    <h1 class="topo__titulo">Beba Água</h1>
+    <h1 class="topo__titulo"><img class="logo" src="src/logo.svg" alt="" width="24" height="24">Beba Água</h1>
     <button type="button" class="botao botao--fantasma" id="sair" hidden>Sair</button>
   </header>
 
@@ -80,7 +81,8 @@
 
   <dialog class="login" id="login" aria-labelledby="login-titulo">
     <form id="login-form" novalidate>
-      <h2 class="tela__titulo" id="login-titulo">Entrar</h2>
+      <img class="logo logo--grande" src="src/logo.svg" alt="" width="48" height="48">
+      <h2 class="tela__titulo" id="login-titulo">Entrar no Beba Água</h2>
       <p class="texto-suave">O app grava direto no GitHub, na branch de dados do repositório dele. Gere um token só para isso:</p>
       <ol class="login__passos texto-suave">
         <li>GitHub &gt; Settings &gt; Developer settings &gt; Personal access tokens &gt; <strong>Fine-grained tokens</strong>.</li>
