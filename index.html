@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1220">
+  <meta name="robots" content="noindex">
+  <title>Beba Água</title>
+  <link rel="stylesheet" href="src/style.css">
+</head>
+<body>
+  <header class="topo">
+    <h1 class="topo__titulo">Beba Água</h1>
+    <button type="button" class="botao botao--fantasma" id="sair" hidden>Sair</button>
+  </header>
+
+  <main class="pagina">
+    <section class="tela tela--centro" id="tela-carregando" hidden>
+      <div class="girador" aria-hidden="true"></div>
+      <p role="status">Carregando seus dados...</p>
+    </section>
+
+    <section class="tela tela--centro" id="tela-erro" hidden>
+      <h2 class="tela__titulo" tabindex="-1">Não deu para carregar</h2>
+      <p class="texto-suave" id="erro-mensagem"></p>
+      <div class="pilha">
+        <button type="button" class="botao botao--primario" id="erro-recarregar">Tentar de novo</button>
+        <button type="button" class="botao botao--fantasma" id="erro-trocar-token">Trocar token</button>
+      </div>
+    </section>
+
+    <section class="tela" id="tela-meta" hidden>
+      <h2 class="tela__titulo" tabindex="-1">Quanto de água por dia?</h2>
+      <div class="atalhos" id="meta-atalhos" role="group" aria-label="Atalhos de meta"></div>
+      <div class="ajuste" role="group" aria-label="Ajuste fino da meta">
+        <button type="button" class="botao botao--redondo" id="meta-menos" aria-label="Diminuir 0,5 L">&minus;</button>
+        <output class="ajuste__valor" id="meta-valor" aria-live="polite"></output>
+        <button type="button" class="botao botao--redondo" id="meta-mais" aria-label="Aumentar 0,5 L">+</button>
+      </div>
+      <div class="pilha">
+        <button type="button" class="botao botao--primario" id="meta-salvar">Salvar meta</button>
+        <button type="button" class="botao botao--fantasma" id="meta-cancelar" hidden>Cancelar</button>
+      </div>
+    </section>
+
+    <section class="tela" id="tela-principal" hidden>
+      <h2 class="so-leitor" tabindex="-1">Hoje</h2>
+      <ol class="semana" id="semana" aria-label="Semana atual"></ol>
+
+      <div class="hoje">
+        <div class="hoje__anel" id="anel-hoje"></div>
+        <div class="hoje__centro">
+          <svg class="hoje__check" id="hoje-check" viewBox="0 0 24 24" aria-hidden="true" hidden>
+            <path d="M5 12.5l4.5 4.5L19 7.5"/>
+          </svg>
+          <p class="hoje__ml" id="hoje-ml"></p>
+          <button type="button" class="botao botao--fantasma" id="hoje-meta"></button>
+        </div>
+      </div>
+      <p class="hoje__resumo" id="hoje-resumo" aria-live="polite"></p>
+
+      <div class="pilha">
+        <button type="button" class="botao botao--primario botao--grande" id="somar">+ 500 ml</button>
+        <button type="button" class="botao botao--fantasma" id="desfazer" hidden>desfazer 500 ml</button>
+      </div>
+      <p class="texto-suave texto-pequeno gravacao" id="gravacao" role="status"></p>
+
+      <section class="trajetoria" aria-labelledby="trajetoria-titulo">
+        <h2 class="trajetoria__titulo" id="trajetoria-titulo">Trajetória</h2>
+        <p class="texto-suave" id="trajetoria-vazia" hidden>Nada registrado nos últimos 30 dias. Toque em "+ 500 ml" para começar.</p>
+        <ol class="trajetoria__lista" id="trajetoria-lista"></ol>
+      </section>
+    </section>
+  </main>
+
+  <div class="aviso" id="aviso" role="alert" hidden>
+    <p class="aviso__texto" id="aviso-texto"></p>
+    <button type="button" class="botao botao--fantasma" id="aviso-acao"></button>
+  </div>
+
+  <dialog class="login" id="login" aria-labelledby="login-titulo">
+    <form id="login-form" novalidate>
+      <h2 class="tela__titulo" id="login-titulo">Entrar</h2>
+      <p class="texto-suave">O app grava direto no seu repositório de dados. Gere um token só para ele:</p>
+      <ol class="login__passos texto-suave">
+        <li>GitHub &gt; Settings &gt; Developer settings &gt; Personal access tokens &gt; <strong>Fine-grained tokens</strong>.</li>
+        <li><strong>Generate new token</strong>, com acesso só ao repositório <strong id="login-repo"></strong>.</li>
+        <li>Permissão <strong>Contents: Read and write</strong>.</li>
+      </ol>
+      <label class="campo__rotulo" for="login-token">Token do GitHub</label>
+      <input class="campo" id="login-token" type="password" autocomplete="off" spellcheck="false" aria-describedby="login-erro">
+      <p class="campo__erro" id="login-erro" hidden></p>
+      <p class="texto-suave texto-pequeno">O token fica guardado só neste navegador.</p>
+      <div class="pilha">
+        <button type="submit" class="botao botao--primario" id="login-entrar">Entrar</button>
+        <button type="button" class="botao botao--fantasma" id="login-cancelar" hidden>Cancelar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>

@@ -69,4 +69,4 @@ src/ui.js        anéis, telas e histórico
 
 ## Estado
 
-Em planejamento. O plano completo está em [PLANO.md](PLANO.md).
+MVP implementado na branch `mvp`. O plano completo está em [PLANO.md](PLANO.md).
