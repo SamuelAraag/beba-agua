@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Beba Água">
+  <!-- Cores iguais aos tokens azul e texto de style.css. -->
+  <path fill="#3b9dff" d="M32 5C32 5 11 27.5 11 40a21 21 0 0 0 42 0C53 27.5 32 5 32 5Z"/>
+  <path fill="none" stroke="#e8eef7" stroke-width="4.5" stroke-linecap="round" d="M20.5 41a11.5 11.5 0 0 0 9 11"/>
+</svg>
