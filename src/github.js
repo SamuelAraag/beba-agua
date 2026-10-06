@@ -1,7 +1,7 @@
 // Leitura e gravação do agua.json pela API de Contents do GitHub.
 
 const DONO = 'SamuelAraag';
-const REPO = 'emagrecimento';
+const REPO = 'beba-agua';
 const BRANCH = 'agua-dados';
 const ARQUIVO = 'agua.json';
 
