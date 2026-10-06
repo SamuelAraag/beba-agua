@@ -16,9 +16,9 @@ cada toque soma 500 ml à cota de hoje.
 
 ## Armazenamento
 
-Não tem servidor. Os dados ficam num arquivo `agua.json`, numa branch própria de um
-repositório privado no GitHub, lido e gravado pela API de Contents. Cada toque vira um
-commit nessa branch; a `main` deste repositório nunca recebe dado.
+Não tem servidor. Os dados ficam num arquivo `agua.json`, na branch `agua-dados` deste
+mesmo repositório, lido e gravado pela API de Contents do GitHub. Cada toque vira um
+commit nessa branch; a `main` nunca recebe dado.
 
 ```json
 {
@@ -41,7 +41,7 @@ tempo, o app relê o arquivo e soma de novo, sem perder toque.
 O acesso é feito com um token pessoal do GitHub, guardado só no navegador.
 
 1. GitHub > Settings > Developer settings > Personal access tokens > **Fine-grained tokens**.
-2. **Generate new token**, acesso apenas ao repositório de dados.
+2. **Generate new token**, acesso apenas ao repositório `SamuelAraag/beba-agua`.
 3. Permissão **Contents: Read and write**.
 4. Copie o token e cole na tela de login do app.
 
