@@ -21,6 +21,8 @@ let pendente = null; // delta acumulado esperando a vez
 let falha = null; // delta que não gravou, aguardando "tentar de novo"
 let gravando = false;
 let fila = Promise.resolve(); // termina quando não há mais nada para gravar
+let sincronia = null; // { evento: 'salvo' | 'lido', quando } da última troca com o GitHub que deu certo
+let atualizandoAgora = false; // releitura pedida pela pessoa em andamento
 let rascunhoMeta = null; // valor na tela de meta; nulo quando ela está fechada
 let atualizando = false; // releitura periódica em andamento
 let ultimaTentativa = Date.now(); // última leitura do remoto, com sucesso ou não
@@ -89,8 +91,14 @@ function render() {
     ui.mostrarTela('meta');
     return;
   }
-  ui.renderPrincipal(dados, hoje, { gravando });
+  ui.renderPrincipal(dados, hoje, { gravando, sincronia });
   ui.mostrarTela('principal');
+}
+
+function marcarSincronia(evento) {
+  sincronia = { evento, quando: new Date() };
+  // Sincronizou: um aviso de "não deu para atualizar" ficou velho. O de falha ao salvar fica.
+  if (!falha) ui.esconderAviso();
 }
 
 // Só vira o dia com a fila vazia: um delta em andamento pertence ao dia em que foi tocado.
@@ -145,6 +153,7 @@ async function gravarComReaplicacao(delta) {
     try {
       sha = await github.gravar(novo, sha, mensagemDeCommit(delta));
       confirmado = novo;
+      marcarSincronia('salvo');
       return;
     } catch (erro) {
       if (erro.tipo !== 'conflito' || reaplicacoes >= MAX_REAPLICACOES) throw erro;
@@ -192,8 +201,9 @@ async function atualizar() {
     if (remoto.sha !== sha) {
       confirmado = normalizar(remoto.dados);
       sha = remoto.sha;
-      render();
     }
+    marcarSincronia('lido');
+    render();
   } catch (erro) {
     // Rede e servidor ficam em silêncio: o próximo ciclo tenta de novo.
     if (erro.tipo === 'token' && github.lerToken()) {
@@ -202,6 +212,46 @@ async function atualizar() {
     }
   } finally {
     atualizando = false;
+  }
+}
+
+// Releitura pedida pela pessoa (puxar a tela ou botão "Atualizar"). Diferente da
+// silenciosa, espera a fila de gravação e avisa na tela se não der certo.
+async function atualizarAgora() {
+  if (atualizandoAgora) return;
+  if (!confirmado) {
+    if (github.lerToken()) await carregar();
+    return;
+  }
+  atualizandoAgora = true;
+  ui.atualizarOcupado(true);
+  try {
+    await fila;
+    if (falha) return; // o aviso da falha ao salvar já está na tela
+    virarDia();
+    const shaAntes = sha;
+    const remoto = await github.ler();
+    ultimaTentativa = Date.now();
+    // Um toque ou logout durante a leitura deixa o que veio velho: a gravação já sincroniza.
+    if (!confirmado || gravando || pendente || sha !== shaAntes) return;
+    confirmado = normalizar(remoto.dados);
+    sha = remoto.sha;
+    marcarSincronia('lido');
+  } catch (erro) {
+    if (erro.tipo === 'token') {
+      github.apagarToken();
+      ui.abrirLogin(erro.message);
+    } else if (!falha) {
+      ui.mostrarAviso(`Não deu para atualizar. ${erro.message}`, 'Tentar de novo', () => {
+        ui.esconderAviso();
+        atualizarAgora();
+      });
+    }
+  } finally {
+    atualizandoAgora = false;
+    ui.atualizarOcupado(false);
+    render();
+    agendar();
   }
 }
 
@@ -233,6 +283,7 @@ async function carregar() {
     confirmado = normalizar(remoto.dados);
     sha = remoto.sha;
     ultimaTentativa = Date.now();
+    marcarSincronia('lido');
     render();
   } catch (erro) {
     if (erro.tipo === 'token') {
@@ -257,6 +308,7 @@ async function entrar(token) {
     confirmado = normalizar(remoto.dados);
     sha = remoto.sha;
     ultimaTentativa = Date.now();
+    marcarSincronia('lido');
     ui.fecharLogin();
     render();
   } catch (erro) {
@@ -273,15 +325,10 @@ function sair() {
   sha = null;
   rascunhoMeta = null;
   falha = null;
+  sincronia = null;
   ui.esconderAviso();
   ui.mostrarTela(null);
   ui.abrirLogin();
-}
-
-// Espera a fila esvaziar para o reload não cortar uma gravação no meio.
-async function recarregarPagina() {
-  await fila;
-  location.reload();
 }
 
 function ajustarRascunho(ml) {
@@ -317,7 +364,8 @@ ui.ligarEventos({
   entrar,
   sair,
   recarregar: carregar,
-  puxar: recarregarPagina,
+  atualizar: atualizarAgora,
+  puxar: atualizarAgora,
   trocarToken: () => ui.abrirLogin(),
 });
 

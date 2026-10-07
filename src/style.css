@@ -41,6 +41,7 @@
 
 body {
   margin: 0;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
   min-height: 100dvh;
   background: var(--fundo);
   color: var(--texto);
@@ -128,7 +129,11 @@ h2:focus {
 }
 
 .pagina {
-  padding-bottom: var(--e7);
+  padding-bottom: calc(var(--e7) + env(safe-area-inset-bottom));
+}
+
+.topo__acoes {
+  display: flex;
 }
 
 .tela {
@@ -192,6 +197,12 @@ h2:focus {
   font-size: var(--fonte-titulo);
 }
 
+.botao--perigo {
+  background: var(--erro);
+  color: var(--fundo);
+  font-weight: 700;
+}
+
 .botao--fantasma {
   color: var(--texto-suave);
 }
@@ -230,21 +241,18 @@ html {
   transform: translateY(var(--puxar, 0px));
 }
 
+/* O anel fica no meio do vão aberto pelo arraste e aparece conforme ele enche. */
 .puxar {
   position: fixed;
-  top: 0;
-  right: 0;
-  left: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: var(--puxar, 0px);
-  overflow: hidden;
+  top: env(safe-area-inset-top);
+  left: 50%;
+  opacity: var(--puxar-progresso, 0);
+  transform: translate(-50%, calc(var(--puxar, 0px) / 2 - 50%));
   pointer-events: none;
 }
 
 .puxar__anel {
-  flex: none;
+  display: block;
   width: var(--e5);
   height: var(--e5);
 }
@@ -280,7 +288,7 @@ html {
 }
 
 .puxar-soltando .puxar {
-  transition: height var(--medio);
+  transition: transform var(--medio), opacity var(--medio);
 }
 
 /* Carregando */
@@ -360,9 +368,15 @@ html {
   stroke: var(--verde);
 }
 
-.anel__excesso {
+/* Verde e âmbar têm a mesma luminosidade: a borda escura separa a segunda volta sem depender da cor. */
+.anel .anel__excesso-borda {
+  stroke: var(--fundo);
+  stroke-width: 7;
+}
+
+.anel .anel__excesso {
   stroke: var(--excesso);
-  stroke-width: 5;
+  stroke-width: 4;
 }
 
 .anel__check {
@@ -406,8 +420,12 @@ html {
   stroke-width: 12;
 }
 
-.semana__dia .anel__excesso {
-  stroke-width: 6;
+.semana__dia .anel .anel__excesso-borda {
+  stroke-width: 10;
+}
+
+.semana__dia .anel .anel__excesso {
+  stroke-width: 5;
 }
 
 .semana__dia--hoje {
@@ -475,6 +493,9 @@ html {
 }
 
 .gravacao {
+  display: flex;
+  justify-content: center;
+  gap: var(--e1);
   min-height: 1.5em;
   margin-top: calc(var(--e4) * -1);
   text-align: center;
@@ -546,7 +567,7 @@ html {
 .aviso {
   position: fixed;
   right: var(--e4);
-  bottom: var(--e4);
+  bottom: calc(var(--e4) + env(safe-area-inset-bottom));
   left: var(--e4);
   display: flex;
   align-items: center;
@@ -580,7 +601,7 @@ html {
 
 /* Login */
 
-.login {
+.dialogo {
   width: min(100% - var(--e6), 408px);
   max-height: calc(100dvh - var(--e6));
   padding: var(--e5);
@@ -590,11 +611,16 @@ html {
   color: var(--texto);
 }
 
+.dialogo::backdrop {
+  background: color-mix(in srgb, var(--fundo) 80%, transparent);
+}
+
+/* Sem token não há nada para mostrar atrás do login. */
 .login::backdrop {
   background: var(--fundo);
 }
 
-.login form {
+.dialogo form {
   display: flex;
   flex-direction: column;
   gap: var(--e3);
