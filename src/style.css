@@ -243,21 +243,35 @@ html {
   pointer-events: none;
 }
 
-.puxar .girador {
+.puxar__anel {
   flex: none;
   width: var(--e5);
   height: var(--e5);
-  opacity: 0.45;
-  animation-play-state: paused;
-  transition: opacity var(--rapido);
 }
 
-.puxar--armado .girador {
-  opacity: 1;
+.puxar__anel circle {
+  fill: none;
+  stroke-width: 3;
 }
 
-.puxar--recarregando .girador {
-  animation-play-state: running;
+.puxar__trilho {
+  stroke: var(--trilho);
+}
+
+.puxar__arco {
+  stroke: var(--azul);
+  stroke-dasharray: 100 100;
+  stroke-dashoffset: 100;
+  stroke-linecap: round;
+}
+
+.puxar--cheio .puxar__arco {
+  stroke: var(--verde);
+}
+
+/* Anel cheio girando não se percebe: enquanto recarrega, gira um arco de três quartos. */
+.puxar--recarregando .puxar__anel {
+  animation: girar 1s linear infinite;
 }
 
 .puxar-soltando .topo,
@@ -626,7 +640,6 @@ html {
 @media (prefers-reduced-motion: reduce) {
   .botao,
   .anel__arco,
-  .puxar .girador,
   .puxar-soltando .topo,
   .puxar-soltando .pagina,
   .puxar-soltando .puxar {
@@ -637,7 +650,8 @@ html {
     animation: none;
   }
 
-  .girador {
+  .girador,
+  .puxar--recarregando .puxar__anel {
     animation-duration: 3s;
   }
 }

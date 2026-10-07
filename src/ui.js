@@ -6,8 +6,7 @@ const SVG = 'http://www.w3.org/2000/svg';
 const ATALHOS_ML = [1000, 1500, 2000, 2500, 3000, 3500];
 const DIAS_TRAJETORIA = 30;
 const INICIAIS_SEMANA = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
-const LIMIAR_PUXAR = 64;
-const MAX_PUXAR = 96;
+const FIM_PUXAR = 64; // descida máxima do conteúdo; chegar aqui recarrega
 
 const $ = (id) => document.getElementById(id);
 
@@ -246,7 +245,8 @@ export function loginOcupado(ocupado) {
 }
 
 // Puxar para recarregar, como nos apps do iPhone: no topo da página, arrasta para
-// baixo e solta. O conteúdo desce junto com o dedo e o girador aparece no vão.
+// baixo e solta. O conteúdo desce junto com o dedo e, no vão, um anel enche de 0 a
+// 100%. Anel cheio é o fim do arraste: soltar ali recarrega.
 function ligarPuxar(aoSoltar) {
   const raiz = document.documentElement;
   let inicio = null;
@@ -256,7 +256,8 @@ function ligarPuxar(aoSoltar) {
   const definir = (px) => {
     distancia = px;
     raiz.style.setProperty('--puxar', `${px}px`);
-    $('puxar').classList.toggle('puxar--armado', px >= LIMIAR_PUXAR);
+    $('puxar-arco').style.strokeDashoffset = 100 - (px / FIM_PUXAR) * 100;
+    $('puxar').classList.toggle('puxar--cheio', px >= FIM_PUXAR);
   };
 
   addEventListener(
@@ -280,7 +281,7 @@ function ligarPuxar(aoSoltar) {
       }
       // Segura o elástico nativo para o conteúdo seguir só o nosso deslocamento.
       if (evento.cancelable) evento.preventDefault();
-      definir(Math.min(arrasto / 2, MAX_PUXAR));
+      definir(Math.min(arrasto / 2, FIM_PUXAR));
     },
     { passive: false },
   );
@@ -289,12 +290,12 @@ function ligarPuxar(aoSoltar) {
     if (inicio == null) return;
     inicio = null;
     raiz.classList.add('puxar-soltando');
-    if (distancia < LIMIAR_PUXAR) {
+    if (distancia < FIM_PUXAR) {
       definir(0);
       return;
     }
     recarregando = true;
-    definir(LIMIAR_PUXAR);
+    $('puxar-arco').style.strokeDashoffset = 25;
     $('puxar').classList.add('puxar--recarregando');
     aoSoltar();
   });

@@ -10,7 +10,12 @@
   <link rel="stylesheet" href="src/style.css">
 </head>
 <body>
-  <div class="puxar" id="puxar" aria-hidden="true"><div class="girador"></div></div>
+  <div class="puxar" id="puxar" aria-hidden="true">
+    <svg class="puxar__anel" viewBox="0 0 24 24">
+      <circle class="puxar__trilho" cx="12" cy="12" r="9"/>
+      <circle class="puxar__arco" id="puxar-arco" cx="12" cy="12" r="9" pathLength="100" transform="rotate(-90 12 12)"/>
+    </svg>
+  </div>
 
   <header class="topo">
     <h1 class="topo__titulo"><img class="logo" src="src/logo.svg" alt="" width="24" height="24">Beba Água</h1>
