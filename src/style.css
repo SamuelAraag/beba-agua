@@ -219,6 +219,56 @@ h2:focus {
   font-size: var(--fonte-titulo);
 }
 
+/* Puxar para recarregar */
+
+html {
+  overscroll-behavior-y: contain;
+}
+
+.topo,
+.pagina {
+  transform: translateY(var(--puxar, 0px));
+}
+
+.puxar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--puxar, 0px);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.puxar .girador {
+  flex: none;
+  width: var(--e5);
+  height: var(--e5);
+  opacity: 0.45;
+  animation-play-state: paused;
+  transition: opacity var(--rapido);
+}
+
+.puxar--armado .girador {
+  opacity: 1;
+}
+
+.puxar--recarregando .girador {
+  animation-play-state: running;
+}
+
+.puxar-soltando .topo,
+.puxar-soltando .pagina {
+  transition: transform var(--medio);
+}
+
+.puxar-soltando .puxar {
+  transition: height var(--medio);
+}
+
 /* Carregando */
 
 .girador {
@@ -575,7 +625,11 @@ h2:focus {
 
 @media (prefers-reduced-motion: reduce) {
   .botao,
-  .anel__arco {
+  .anel__arco,
+  .puxar .girador,
+  .puxar-soltando .topo,
+  .puxar-soltando .pagina,
+  .puxar-soltando .puxar {
     transition: none;
   }
 

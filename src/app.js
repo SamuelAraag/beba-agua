@@ -20,6 +20,7 @@ let emVoo = null; // delta sendo gravado agora
 let pendente = null; // delta acumulado esperando a vez
 let falha = null; // delta que não gravou, aguardando "tentar de novo"
 let gravando = false;
+let fila = Promise.resolve(); // termina quando não há mais nada para gravar
 let rascunhoMeta = null; // valor na tela de meta; nulo quando ela está fechada
 let atualizando = false; // releitura periódica em andamento
 let ultimaTentativa = Date.now(); // última leitura do remoto, com sucesso ou não
@@ -105,7 +106,7 @@ function enfileirar(delta) {
   virarDia();
   pendente = somarDeltas(pendente, delta);
   render();
-  bombear();
+  if (!gravando) fila = bombear();
 }
 
 // Fila única: um PUT por vez. Toques durante a gravação acumulam em `pendente`.
@@ -277,6 +278,12 @@ function sair() {
   ui.abrirLogin();
 }
 
+// Espera a fila esvaziar para o reload não cortar uma gravação no meio.
+async function recarregarPagina() {
+  await fila;
+  location.reload();
+}
+
 function ajustarRascunho(ml) {
   rascunhoMeta = Math.min(META_MAX_ML, Math.max(META_MIN_ML, ml));
   render();
@@ -310,6 +317,7 @@ ui.ligarEventos({
   entrar,
   sair,
   recarregar: carregar,
+  puxar: recarregarPagina,
   trocarToken: () => ui.abrirLogin(),
 });
 

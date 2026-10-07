@@ -6,6 +6,8 @@ const SVG = 'http://www.w3.org/2000/svg';
 const ATALHOS_ML = [1000, 1500, 2000, 2500, 3000, 3500];
 const DIAS_TRAJETORIA = 30;
 const INICIAIS_SEMANA = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
+const LIMIAR_PUXAR = 64;
+const MAX_PUXAR = 96;
 
 const $ = (id) => document.getElementById(id);
 
@@ -243,7 +245,68 @@ export function loginOcupado(ocupado) {
   $('login-entrar').textContent = ocupado ? 'Verificando...' : 'Entrar';
 }
 
+// Puxar para recarregar, como nos apps do iPhone: no topo da página, arrasta para
+// baixo e solta. O conteúdo desce junto com o dedo e o girador aparece no vão.
+function ligarPuxar(aoSoltar) {
+  const raiz = document.documentElement;
+  let inicio = null;
+  let distancia = 0;
+  let recarregando = false;
+
+  const definir = (px) => {
+    distancia = px;
+    raiz.style.setProperty('--puxar', `${px}px`);
+    $('puxar').classList.toggle('puxar--armado', px >= LIMIAR_PUXAR);
+  };
+
+  addEventListener(
+    'touchstart',
+    (evento) => {
+      const podePuxar = !recarregando && evento.touches.length === 1 && scrollY <= 0 && !$('login').open;
+      inicio = podePuxar ? evento.touches[0].clientY : null;
+      raiz.classList.remove('puxar-soltando');
+    },
+    { passive: true },
+  );
+
+  addEventListener(
+    'touchmove',
+    (evento) => {
+      if (inicio == null) return;
+      const arrasto = evento.touches[0].clientY - inicio;
+      if (arrasto <= 0 || scrollY > 0) {
+        if (distancia) definir(0);
+        return;
+      }
+      // Segura o elástico nativo para o conteúdo seguir só o nosso deslocamento.
+      if (evento.cancelable) evento.preventDefault();
+      definir(Math.min(arrasto / 2, MAX_PUXAR));
+    },
+    { passive: false },
+  );
+
+  addEventListener('touchend', () => {
+    if (inicio == null) return;
+    inicio = null;
+    raiz.classList.add('puxar-soltando');
+    if (distancia < LIMIAR_PUXAR) {
+      definir(0);
+      return;
+    }
+    recarregando = true;
+    definir(LIMIAR_PUXAR);
+    $('puxar').classList.add('puxar--recarregando');
+    aoSoltar();
+  });
+
+  addEventListener('touchcancel', () => {
+    inicio = null;
+    if (!recarregando) definir(0);
+  });
+}
+
 export function ligarEventos(acoes) {
+  ligarPuxar(acoes.puxar);
   $('somar').addEventListener('click', acoes.somar);
   $('desfazer').addEventListener('click', acoes.desfazer);
   $('hoje-meta').addEventListener('click', acoes.abrirMeta);
