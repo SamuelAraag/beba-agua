@@ -41,6 +41,7 @@
 
 body {
   margin: 0;
+  padding: calc(var(--e7) + env(safe-area-inset-top)) env(safe-area-inset-right) 0 env(safe-area-inset-left);
   min-height: 100dvh;
   background: var(--fundo);
   color: var(--texto);
@@ -128,7 +129,11 @@ h2:focus {
 }
 
 .pagina {
-  padding-bottom: var(--e7);
+  padding-bottom: calc(var(--e7) + env(safe-area-inset-bottom));
+}
+
+.topo__acoes {
+  display: flex;
 }
 
 .tela {
@@ -192,6 +197,12 @@ h2:focus {
   font-size: var(--fonte-titulo);
 }
 
+.botao--perigo {
+  background: var(--erro);
+  color: var(--fundo);
+  font-weight: 700;
+}
+
 .botao--fantasma {
   color: var(--texto-suave);
 }
@@ -217,6 +228,67 @@ h2:focus {
   border-radius: var(--raio-pilula);
   background: var(--superficie);
   font-size: var(--fonte-titulo);
+}
+
+/* Puxar para recarregar */
+
+html {
+  overscroll-behavior-y: contain;
+}
+
+.topo,
+.pagina {
+  transform: translateY(var(--puxar, 0px));
+}
+
+/* O anel fica no meio do vão aberto pelo arraste e aparece conforme ele enche. */
+.puxar {
+  position: fixed;
+  top: env(safe-area-inset-top);
+  left: 50%;
+  opacity: var(--puxar-progresso, 0);
+  transform: translate(-50%, calc(var(--puxar, 0px) / 2 - 50%));
+  pointer-events: none;
+}
+
+.puxar__anel {
+  display: block;
+  width: var(--e5);
+  height: var(--e5);
+}
+
+.puxar__anel circle {
+  fill: none;
+  stroke-width: 3;
+}
+
+.puxar__trilho {
+  stroke: var(--trilho);
+}
+
+.puxar__arco {
+  stroke: var(--azul);
+  stroke-dasharray: 100 100;
+  stroke-dashoffset: 100;
+  stroke-linecap: round;
+}
+
+.puxar--cheio .puxar__arco {
+  stroke: var(--verde);
+}
+
+/* Anel cheio girando não se percebe: enquanto recarrega, gira um arco de três quartos. */
+.puxar--recarregando .puxar__anel {
+  animation: girar 1s linear infinite;
+}
+
+.puxar-soltando .topo,
+.puxar-soltando .pagina {
+  transition: transform var(--medio);
+}
+
+.puxar-soltando .puxar {
+  transition: transform var(--medio), opacity var(--medio);
 }
 
 /* Carregando */
@@ -296,9 +368,15 @@ h2:focus {
   stroke: var(--verde);
 }
 
-.anel__excesso {
+/* Verde e âmbar têm a mesma luminosidade: a borda escura separa a segunda volta sem depender da cor. */
+.anel .anel__excesso-borda {
+  stroke: var(--fundo);
+  stroke-width: 7;
+}
+
+.anel .anel__excesso {
   stroke: var(--excesso);
-  stroke-width: 5;
+  stroke-width: 4;
 }
 
 .anel__check {
@@ -342,8 +420,12 @@ h2:focus {
   stroke-width: 12;
 }
 
-.semana__dia .anel__excesso {
-  stroke-width: 6;
+.semana__dia .anel .anel__excesso-borda {
+  stroke-width: 10;
+}
+
+.semana__dia .anel .anel__excesso {
+  stroke-width: 5;
 }
 
 .semana__dia--hoje {
@@ -411,6 +493,9 @@ h2:focus {
 }
 
 .gravacao {
+  display: flex;
+  justify-content: center;
+  gap: var(--e1);
   min-height: 1.5em;
   margin-top: calc(var(--e4) * -1);
   text-align: center;
@@ -482,7 +567,7 @@ h2:focus {
 .aviso {
   position: fixed;
   right: var(--e4);
-  bottom: var(--e4);
+  bottom: calc(var(--e4) + env(safe-area-inset-bottom));
   left: var(--e4);
   display: flex;
   align-items: center;
@@ -516,7 +601,7 @@ h2:focus {
 
 /* Login */
 
-.login {
+.dialogo {
   width: min(100% - var(--e6), 408px);
   max-height: calc(100dvh - var(--e6));
   padding: var(--e5);
@@ -526,11 +611,16 @@ h2:focus {
   color: var(--texto);
 }
 
+.dialogo::backdrop {
+  background: color-mix(in srgb, var(--fundo) 80%, transparent);
+}
+
+/* Sem token não há nada para mostrar atrás do login. */
 .login::backdrop {
   background: var(--fundo);
 }
 
-.login form {
+.dialogo form {
   display: flex;
   flex-direction: column;
   gap: var(--e3);
@@ -575,7 +665,10 @@ h2:focus {
 
 @media (prefers-reduced-motion: reduce) {
   .botao,
-  .anel__arco {
+  .anel__arco,
+  .puxar-soltando .topo,
+  .puxar-soltando .pagina,
+  .puxar-soltando .puxar {
     transition: none;
   }
 
@@ -583,7 +676,8 @@ h2:focus {
     animation: none;
   }
 
-  .girador {
+  .girador,
+  .puxar--recarregando .puxar__anel {
     animation-duration: 3s;
   }
 }

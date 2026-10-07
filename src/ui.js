@@ -6,6 +6,7 @@ const SVG = 'http://www.w3.org/2000/svg';
 const ATALHOS_ML = [1000, 1500, 2000, 2500, 3000, 3500];
 const DIAS_TRAJETORIA = 30;
 const INICIAIS_SEMANA = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
+const FIM_PUXAR = 64; // descida máxima do conteúdo; chegar aqui recarrega
 
 const $ = (id) => document.getElementById(id);
 
@@ -53,7 +54,12 @@ function proporcao(ml, meta) {
 function criarAnel(comCheck) {
   const raiz = svg('svg', { viewBox: '0 0 100 100', class: 'anel', 'aria-hidden': 'true' });
   const circulo = (classe) => svg('circle', { cx: 50, cy: 50, r: 42, pathLength: 100, class: classe });
-  raiz.append(circulo('anel__trilho'), circulo('anel__arco anel__progresso'), circulo('anel__arco anel__excesso'));
+  raiz.append(
+    circulo('anel__trilho'),
+    circulo('anel__arco anel__progresso'),
+    circulo('anel__arco anel__excesso-borda'),
+    circulo('anel__arco anel__excesso'),
+  );
   if (comCheck) raiz.append(svg('path', { d: 'M36 51l10 10 19-21', class: 'anel__check' }));
   return raiz;
 }
@@ -61,9 +67,11 @@ function criarAnel(comCheck) {
 function atualizarAnel(anel, ml, meta) {
   const p = proporcao(ml, meta);
   anel.classList.toggle('anel--completo', p >= 1);
+  const excesso = Math.min(Math.max(p - 1, 0), 1);
   const arcos = [
     [anel.querySelector('.anel__progresso'), Math.min(p, 1)],
-    [anel.querySelector('.anel__excesso'), Math.min(Math.max(p - 1, 0), 1)],
+    [anel.querySelector('.anel__excesso-borda'), excesso],
+    [anel.querySelector('.anel__excesso'), excesso],
   ];
   for (const [arco, fracao] of arcos) {
     arco.style.strokeDashoffset = 100 - fracao * 100;
@@ -93,6 +101,7 @@ for (const ml of ATALHOS_ML) {
 export function mostrarTela(nome) {
   for (const tela of TELAS) $(`tela-${tela}`).hidden = tela !== nome;
   $('sair').hidden = !lerToken();
+  $('atualizar').hidden = !lerToken();
 }
 
 export function focarTela(nome) {
@@ -113,7 +122,11 @@ export function renderMeta(valor, { podeCancelar, min, max }) {
   }
 }
 
-export function renderPrincipal(dados, hoje, { gravando }) {
+function hora(data) {
+  return data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+
+export function renderPrincipal(dados, hoje, { gravando, sincronia }) {
   const dia = dados.dias[hoje] ?? { ml: 0, meta_ml: dados.meta_ml };
   const meta = dia.meta_ml ?? dados.meta_ml;
 
@@ -126,7 +139,10 @@ export function renderPrincipal(dados, hoje, { gravando }) {
   $('hoje-resumo').classList.toggle('hoje__resumo--batida', dia.ml === meta);
   $('hoje-resumo').classList.toggle('hoje__resumo--excesso', dia.ml > meta);
   $('desfazer').hidden = dia.ml <= 0;
-  $('gravacao').textContent = gravando ? 'Salvando...' : '';
+  // Só o "Salvando/Salvo" é anunciado; a hora da releitura automática muda sem interromper.
+  const salvo = sincronia?.evento === 'salvo';
+  $('gravacao').textContent = gravando ? 'Salvando...' : salvo ? 'Salvo' : '';
+  $('sincronia').textContent = gravando || !sincronia ? '' : `${salvo ? '' : 'Atualizado '}às ${hora(sincronia.quando)}`;
 
   renderSemana(dados, hoje);
   renderTrajetoria(dados, hoje);
@@ -218,8 +234,14 @@ export function esconderAviso() {
   acaoDoAviso = null;
 }
 
+export function atualizarOcupado(ocupado) {
+  $('atualizar').disabled = ocupado;
+  $('atualizar').textContent = ocupado ? 'Atualizando...' : 'Atualizar';
+}
+
 export function abrirLogin(mensagem) {
   const dialogo = $('login');
+  if ($('confirmar-sair').open) $('confirmar-sair').close('cancelar');
   $('login-cancelar').hidden = !lerToken();
   $('login-token').value = '';
   erroNoLogin(mensagem ?? null);
@@ -243,7 +265,76 @@ export function loginOcupado(ocupado) {
   $('login-entrar').textContent = ocupado ? 'Verificando...' : 'Entrar';
 }
 
+// Puxar para recarregar, como nos apps do iPhone: no topo da página, arrasta para
+// baixo e solta. O conteúdo desce junto com o dedo e, no vão, um anel enche de 0 a
+// 100%. Anel cheio é o fim do arraste: soltar ali atualiza, e o anel gira até
+// `aoSoltar` terminar.
+function ligarPuxar(aoSoltar) {
+  const raiz = document.documentElement;
+  let inicio = null;
+  let distancia = 0;
+  let recarregando = false;
+
+  const definir = (px) => {
+    distancia = px;
+    raiz.style.setProperty('--puxar', `${px}px`);
+    raiz.style.setProperty('--puxar-progresso', px / FIM_PUXAR);
+    $('puxar-arco').style.strokeDashoffset = 100 - (px / FIM_PUXAR) * 100;
+    $('puxar').classList.toggle('puxar--cheio', px >= FIM_PUXAR);
+  };
+
+  addEventListener(
+    'touchstart',
+    (evento) => {
+      const podePuxar = !recarregando && evento.touches.length === 1 && scrollY <= 0 && !document.querySelector('dialog[open]');
+      inicio = podePuxar ? evento.touches[0].clientY : null;
+      raiz.classList.remove('puxar-soltando');
+    },
+    { passive: true },
+  );
+
+  addEventListener(
+    'touchmove',
+    (evento) => {
+      if (inicio == null) return;
+      const arrasto = evento.touches[0].clientY - inicio;
+      if (arrasto <= 0 || scrollY > 0) {
+        if (distancia) definir(0);
+        return;
+      }
+      // Segura o elástico nativo para o conteúdo seguir só o nosso deslocamento.
+      if (evento.cancelable) evento.preventDefault();
+      definir(Math.min(arrasto / 2, FIM_PUXAR));
+    },
+    { passive: false },
+  );
+
+  addEventListener('touchend', () => {
+    if (inicio == null) return;
+    inicio = null;
+    raiz.classList.add('puxar-soltando');
+    if (distancia < FIM_PUXAR) {
+      definir(0);
+      return;
+    }
+    recarregando = true;
+    $('puxar-arco').style.strokeDashoffset = 25;
+    $('puxar').classList.add('puxar--recarregando');
+    Promise.resolve(aoSoltar()).finally(() => {
+      recarregando = false;
+      $('puxar').classList.remove('puxar--recarregando');
+      definir(0);
+    });
+  });
+
+  addEventListener('touchcancel', () => {
+    inicio = null;
+    if (!recarregando) definir(0);
+  });
+}
+
 export function ligarEventos(acoes) {
+  ligarPuxar(acoes.puxar);
   $('somar').addEventListener('click', acoes.somar);
   $('desfazer').addEventListener('click', acoes.desfazer);
   $('hoje-meta').addEventListener('click', acoes.abrirMeta);
@@ -255,7 +346,16 @@ export function ligarEventos(acoes) {
   $('meta-mais').addEventListener('click', () => acoes.ajustarMeta(1));
   $('meta-salvar').addEventListener('click', acoes.salvarMeta);
   $('meta-cancelar').addEventListener('click', acoes.cancelarMeta);
-  $('sair').addEventListener('click', acoes.sair);
+  $('atualizar').addEventListener('click', acoes.atualizar);
+  // Sair apaga o token, que o GitHub não mostra de novo: confirma antes.
+  const confirmarSair = $('confirmar-sair');
+  $('sair').addEventListener('click', () => confirmarSair.showModal());
+  confirmarSair.addEventListener('click', (evento) => {
+    if (evento.target === confirmarSair) confirmarSair.close('cancelar');
+  });
+  confirmarSair.querySelector('form').addEventListener('submit', (evento) => {
+    if (evento.submitter?.value === 'sair') acoes.sair();
+  });
   $('erro-recarregar').addEventListener('click', acoes.recarregar);
   $('erro-trocar-token').addEventListener('click', acoes.trocarToken);
   $('aviso-acao').addEventListener('click', () => acaoDoAviso?.());
