@@ -1,24 +1,30 @@
 # Beba Água
 
-Contador de água diário. Você define a meta uma vez e, no dia a dia, só aperta um botão:
-cada toque soma 500 ml à cota de hoje.
+Contador de água diário projetado para uso direto no celular. Você define a meta uma vez e, na rotina, precisa apenas de um toque: cada clique soma 500 ml ao total do dia.
+
+## Preview no iPhone
+
+O app instalado como atalho na tela de início e em uso no iPhone:
+
+<p align="center">
+  <img src="docs/preview/icone.webp" alt="Ícone do Beba Água na tela de início do iPhone" width="170" />
+  <img src="docs/preview/tela-principal.webp" alt="Tela principal com anel de meta diária" width="210" />
+  <img src="docs/preview/ajuste-meta.webp" alt="Ajuste de meta diária" width="210" />
+  <img src="docs/preview/trajetoria.webp" alt="Histórico recente de consumo" width="210" />
+</p>
 
 ## Como funciona
 
-- **Meta diária**: configurada no primeiro acesso (1 L a 3,5 L, ou ajuste de 0,5 em 0,5 L)
-  e editável depois tocando em "Meta".
-- **+ 500 ml**: botão único, sempre o mesmo valor, direto para o dia de hoje.
-- **Meta batida**: o anel fecha e fica verde.
-- **Passou da meta**: a contagem continua. Um segundo arco mostra o excedente, com o
-  texto "+X ml acima da meta" e o percentual real.
-- **Trajetória**: faixa da semana com um anel por dia e histórico dos últimos 30 dias.
-- **Desfazer**: remove os últimos 500 ml em caso de toque errado.
+- A meta diária vai de 1 L a 3,5 L (em intervalos de 0,5 L), definida no primeiro acesso e ajustável a qualquer momento ao tocar na meta.
+- O botão principal adiciona 500 ml por toque ao total do dia.
+- Quando a meta é atingida, o anel fecha e fica verde.
+- Se o consumo passar da meta, a contagem continua e um arco adicional destaca o volume excedente e o percentual atingido.
+- Uma faixa semanal exibe anéis individuais para cada dia, acompanhada do histórico detalhado dos últimos 30 dias.
+- O botão de desfazer remove os últimos 500 ml em caso de toque acidental.
 
 ## Armazenamento
 
-Não tem servidor. Os dados ficam num arquivo `agua.json`, na branch `agua-dados` deste
-mesmo repositório, lido e gravado pela API de Contents do GitHub. Cada toque vira um
-commit nessa branch; a `main` nunca recebe dado.
+Os registros ficam salvos em um arquivo `agua.json` na branch `agua-dados` deste repositório, gerenciados diretamente pela API de Contents do GitHub. Cada toque gera um commit nessa branch, mantendo a `main` dedicada exclusivamente ao código da aplicação.
 
 ```json
 {
@@ -30,38 +36,34 @@ commit nessa branch; a `main` nunca recebe dado.
 }
 ```
 
-Cada dia guarda a meta que valia naquele dia, então mudar a meta não altera o passado.
+Cada registro diário preserva a meta configurada naquela data, o que mantém o histórico consistente mesmo se a meta for alterada posteriormente.
 
-O app lê os dados quando a página carrega e depois relê sozinho: a cada 5 minutos com a
-tela visível e em foco, e a cada 15 minutos com a tela oculta ou sem foco. Ao voltar para a
-tela, ele sempre relê na hora. É assim que aparece o que foi registrado em outro aparelho, e
-o dia também vira sozinho, sem atualizar a tela. Se dois aparelhos gravarem ao mesmo tempo,
-o app relê o arquivo e soma de novo, e nenhum toque se perde.
+A leitura inicial ocorre ao abrir a página. A sincronização roda em segundo plano a cada 5 minutos com a tela visível e a cada 15 minutos quando a tela fica em segundo plano, além de recarregar os dados imediatamente ao voltar para o app. Isso mantém os registros sincronizados entre aparelhos diferentes e vira o dia automaticamente sem recarregar a página. Se dois dispositivos salvarem no mesmo intervalo, o app relê o arquivo antes de gravar para evitar perda de dados.
 
-## Login
+## Acesso
 
-O acesso é feito com um token pessoal do GitHub, guardado só no navegador.
+A autenticação utiliza um personal access token do GitHub, armazenado apenas no navegador local.
 
-1. GitHub > Settings > Developer settings > Personal access tokens > **Fine-grained tokens**.
-2. **Generate new token**, acesso apenas ao repositório `SamuelAraag/beba-agua`.
-3. Permissão **Contents: Read and write**.
-4. Copie o token e cole na tela de login do app.
+1. Acesse GitHub > Settings > Developer settings > Personal access tokens > Fine-grained tokens.
+2. Clique em Generate new token e restrinja o acesso ao repositório `SamuelAraag/beba-agua`.
+3. Em Permissions, selecione Contents com permissão Read and write.
+4. Cole o token gerado na tela inicial do app.
 
-O botão "Sair" apaga o token do navegador.
+O botão Sair remove o token salvo no navegador.
 
-## Rodar localmente
+## Execução local
 
-Sem build e sem dependências:
+Como não há etapa de build nem dependências externas, basta iniciar um servidor HTTP local:
 
-```
+```bash
 python3 -m http.server 8000
 ```
 
-Abra `http://localhost:8000`.
+Em seguida, acesse `http://localhost:8000`.
 
 ## Estrutura
 
-```
+```text
 index.html
 src/style.css
 src/app.js       estado, regras e eventos
@@ -69,6 +71,6 @@ src/github.js    leitura e gravação via API do GitHub
 src/ui.js        anéis, telas e histórico
 ```
 
-## Estado
+## Status
 
-MVP implementado na branch `mvp`. O plano completo está em [PLANO.md](PLANO.md).
+MVP implementado na branch `mvp`. O planejamento completo está em [PLANO.md](PLANO.md).
